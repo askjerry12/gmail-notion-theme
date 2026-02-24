@@ -250,6 +250,47 @@ h2.hP {
 }
 
 /* =====================
+   SENDER NAME — H3 style in reading pane
+   ===================== */
+.notion-sender-name {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  color: var(--notion-text) !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.3 !important;
+}
+
+/* =====================
+   COMPANY BADGE — blue pill next to sender
+   ===================== */
+.notion-company-badge {
+  display: inline-block !important;
+  margin-left: 8px !important;
+  padding: 1px 8px !important;
+  background-color: var(--notion-blue) !important;
+  color: var(--notion-accent) !important;
+  border-radius: 20px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  vertical-align: middle !important;
+  letter-spacing: 0 !important;
+  border: 1px solid #bfdbfe !important;
+  white-space: nowrap !important;
+}
+
+/* =====================
+   KEYWORD HIGHLIGHTS
+   ===================== */
+.notion-keyword {
+  font-weight: 600 !important;
+  color: #1d4ed8 !important;         /* strong blue */
+  background-color: #eff6ff !important;
+  padding: 0 3px !important;
+  border-radius: 3px !important;
+  font-size: inherit !important;
+}
+
+/* =====================
    SCROLLBAR — subtle
    ===================== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
