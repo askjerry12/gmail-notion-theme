@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Gmail Notion Theme",
+  "version": "1.0.0",
+  "description": "Reskin Gmail to look like Notion with clean minimal design and typographic hierarchy",
+  "permissions": [
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://mail.google.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://mail.google.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_end"
+    }
+  ]
+}

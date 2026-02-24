@@ -1,0 +1,369 @@
+/* Gmail Notion Theme - Styles.css */
+/* Reset and base styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --notion-bg: #ffffff;
+  --notion-surface: #f7f7f7;
+  --notion-border: #e0e0e0;
+  --notion-text: #37352f;
+  --notion-text-secondary: #6b6b6b;
+  --notion-text-tertiary: #9b9b9b;
+  --notion-accent: #3b82f6;
+  --notion-yellow: #fef3c7;
+  --notion-blue: #dbeafe;
+  --notion-green: #d1fae5;
+  --notion-red: #fee2e2;
+  --notion-purple: #ede9fe;
+  --notion-pink: #fce7f3;
+  --notion-gray: #f3f4f6;
+  --notion-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --notion-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --notion-radius: 6px;
+  --notion-radius-lg: 8px;
+  --notion-spacing: 24px;
+  --notion-spacing-sm: 16px;
+  --notion-spacing-xs: 8px;
+}
+
+/* Apply Inter font globally */
+body, input, textarea, button, select {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif !important;
+  letter-spacing: -0.011em;
+}
+
+/* Main content area */
+.AO, /* Main content wrapper */
+[role="main"], /* Main role */
+.nH, /* Reading pane wrapper */
+.aeF, /* Email body container */
+.BltHke { /* Email list container */
+  background-color: var(--notion-bg) !important;
+  color: var(--notion-text) !important;
+}
+
+/* Remove Gmail visual noise - clean up borders and heavy styling */
+.TO, /* Top bar */
+.gb_9d, /* Google bar */
+.gb_8d, /* Google bar container */
+.gb_Je, /* App bar */
+.gb_ce, /* Search bar */
+.gb_he, /* Settings menu */
+.aeN, /* Left sidebar */
+.nH .nH, /* Nested containers */
+.aeJ, /* Email list header */
+.aeH, /* Email list header container */
+.aeG, /* Email list header wrapper */
+.T-I, /* Buttons */
+.T-K, /* Button containers */
+.J-J5-Ji, /* Checkboxes */
+.J-JN-M-I, /* More menu */
+.J-M, /* More menu items */
+.aKh, /* Labels */
+.aKj { /* Label items */
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Sidebar styling */
+[role="navigation"] {
+  background-color: var(--notion-surface) !important;
+  border-right: 1px solid var(--notion-border) !important;
+  padding: var(--notion-spacing-sm) !important;
+}
+
+/* Email list - card style rows */
+.zA { /* Email row */
+  background: var(--notion-bg) !important;
+  border: 1px solid var(--notion-border) !important;
+  border-radius: var(--notion-radius) !important;
+  margin: 8px 0 !important;
+  padding: 16px !important;
+  box-shadow: var(--notion-shadow) !important;
+  transition: all 0.2s ease !important;
+}
+
+.zA:hover { /* Email row hover */
+  box-shadow: var(--notion-shadow-hover) !important;
+  transform: translateY(-1px) !important;
+  border-color: var(--notion-accent) !important;
+}
+
+/* Typographic hierarchy */
+.y6 { /* Sender name - H2 style */
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: var(--notion-text) !important;
+  margin-bottom: 4px !important;
+  line-height: 1.4 !important;
+}
+
+.bog { /* Subject - H1 style */
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: var(--notion-text) !important;
+  margin-bottom: 8px !important;
+  line-height: 1.3 !important;
+}
+
+.y2 { /* Preview text - body text style */
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  color: var(--notion-text-secondary) !important;
+  line-height: 1.5 !important;
+  margin-top: 8px !important;
+}
+
+/* Email metadata */
+.xW, /* Date */
+.xY, /* Labels */
+.x7 { /* Star */
+  font-size: 12px !important;
+  color: var(--notion-text-tertiary) !important;
+}
+
+/* Reading pane styling */
+.nH .nH .nH { /* Reading pane container */
+  max-width: 700px !important;
+  margin: 0 auto !important;
+  padding: var(--notion-spacing) !important;
+  background: var(--notion-bg) !important;
+}
+
+/* Email body container */
+.aeF { /* Email body */
+  background: var(--notion-bg) !important;
+  padding: var(--notion-spacing) !important;
+  border-radius: var(--notion-radius-lg) !important;
+  border: 1px solid var(--notion-border) !important;
+}
+
+/* Email body headings */
+.aeF h1 {
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  color: var(--notion-text) !important;
+  margin: 32px 0 16px 0 !important;
+  line-height: 1.2 !important;
+}
+
+.aeF h2 {
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  color: var(--notion-text) !important;
+  margin: 24px 0 12px 0 !important;
+  line-height: 1.3 !important;
+}
+
+.aeF h3 {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: var(--notion-text) !important;
+  margin: 20px 0 10px 0 !important;
+  line-height: 1.4 !important;
+}
+
+.aeF p {
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+  color: var(--notion-text) !important;
+  margin: 12px 0 !important;
+}
+
+/* Colored background callouts for key email sections */
+/* Detect keywords and apply appropriate backgrounds */
+.zA[data-notion-type="warning"],
+.zA:has(.y2:contains("warning")),
+.zA:has(.y2:contains("alert")),
+.zA:has(.y2:contains("urgent")),
+.zA:has(.y2:contains("important")) {
+  background-color: var(--notion-yellow) !important;
+  border-left: 4px solid #f59e0b !important;
+}
+
+.zA[data-notion-type="info"],
+.zA:has(.y2:contains("info")),
+.zA:has(.y2:contains("notice")),
+.zA:has(.y2:contains("update")) {
+  background-color: var(--notion-blue) !important;
+  border-left: 4px solid var(--notion-accent) !important;
+}
+
+.zA[data-notion-type="success"],
+.zA:has(.y2:contains("success")),
+.zA:has(.y2:contains("confirmed")),
+.zA:has(.y2:contains("approved")),
+.zA:has(.y2:contains("completed")) {
+  background-color: var(--notion-green) !important;
+  border-left: 4px solid #10b981 !important;
+}
+
+.zA[data-notion-type="error"],
+.zA:has(.y2:contains("error")),
+.zA:has(.y2:contains("failed")),
+.zA:has(.y2:contains("rejected")) {
+  background-color: var(--notion-red) !important;
+  border-left: 4px solid #ef4444 !important;
+}
+
+/* Email body callouts */
+.aeF blockquote,
+.aeF .gmail_quote,
+.aeF .gmail_extra {
+  background-color: var(--notion-gray) !important;
+  border-left: 4px solid var(--notion-border) !important;
+  padding: 16px !important;
+  margin: 16px 0 !important;
+  border-radius: var(--notion-radius) !important;
+}
+
+/* Links */
+.aeF a {
+  color: var(--notion-accent) !important;
+  text-decoration: none !important;
+  border-bottom: 1px solid transparent !important;
+  transition: border-color 0.2s ease !important;
+}
+
+.aeF a:hover {
+  border-bottom-color: var(--notion-accent) !important;
+}
+
+/* Code blocks */
+.aeF pre,
+.aeF code {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace !important;
+  background-color: var(--notion-surface) !important;
+  padding: 4px 8px !important;
+  border-radius: var(--notion-radius) !important;
+  font-size: 14px !important;
+}
+
+.aeF pre {
+  padding: 16px !important;
+  overflow-x: auto !important;
+  margin: 16px 0 !important;
+}
+
+/* Lists */
+.aeF ul,
+.aeF ol {
+  padding-left: 24px !important;
+  margin: 12px 0 !important;
+}
+
+.aeF li {
+  margin: 6px 0 !important;
+  line-height: 1.6 !important;
+}
+
+/* Tables */
+.aeF table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 16px 0 !important;
+}
+
+.aeF th,
+.aeF td {
+  border: 1px solid var(--notion-border) !important;
+  padding: 12px !important;
+  text-align: left !important;
+}
+
+.aeF th {
+  background-color: var(--notion-surface) !important;
+  font-weight: 600 !important;
+}
+
+/* Buttons in email */
+.aeF button,
+.aeF .button,
+.aeF input[type="submit"],
+.aeF input[type="button"] {
+  background-color: var(--notion-accent) !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px 16px !important;
+  border-radius: var(--notion-radius) !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.aeF button:hover,
+.aeF .button:hover,
+.aeF input[type="submit"]:hover,
+.aeF input[type="button"]:hover {
+  background-color: #2563eb !important;
+}
+
+/* Search bar */
+.gb_ce /* Search bar */ {
+  background: var(--notion-surface) !important;
+  border: 1px solid var(--notion-border) !important;
+  border-radius: var(--notion-radius) !important;
+  padding: 8px 12px !important;
+}
+
+/* Compose button */
+.T-I.J-J5-Ji.T-I--large.T-I--primary {
+  background-color: var(--notion-accent) !important;
+  border-radius: var(--notion-radius) !important;
+  font-weight: 500 !important;
+  padding: 10px 20px !important;
+}
+
+/* Checkboxes */
+.J-J5-Ji {
+  border-radius: var(--notion-radius) !important;
+  border: 1px solid var(--notion-border) !important;
+}
+
+/* Unread emails */
+.zA.yO { /* Unread email */
+  background-color: var(--notion-surface) !important;
+  border-color: var(--notion-accent) !important;
+}
+
+.zA.yO .bog { /* Unread subject */
+  font-weight: 700 !important;
+}
+
+/* Selected email */
+.zA.x7 { /* Selected email */
+  background-color: var(--notion-blue) !important;
+  border-color: var(--notion-accent) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .nH .nH .nH { /* Reading pane */
+    max-width: 100% !important;
+    padding: var(--notion-spacing-sm) !important;
+  }
+  
+  .aeF { /* Email body */
+    padding: var(--notion-spacing-sm) !important;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--notion-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--notion-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--notion-text-tertiary);
+}
