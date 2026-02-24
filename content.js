@@ -82,6 +82,7 @@
   function highlightKeywords(container) {
     if (!container || container.dataset.notionKeywordsHighlighted === 'true') return;
     container.dataset.notionKeywordsHighlighted = 'true';
+    container.setAttribute('data-notion-keywords-highlighted', 'true');
 
     // Walk text nodes only — don't touch scripts/styles/links
     const walker = document.createTreeWalker(
@@ -164,32 +165,44 @@
   //  READING PANE
   // =====================
 
+  let lastSeenSenderEmail = null;
+
   function processReadingPane() {
-    // Find sender name element
     const senderNameEl = document.querySelector('.gD');
     const senderEmailEl = document.querySelector('.go');
+    if (!senderNameEl) return;
 
-    if (senderNameEl && !senderNameEl.dataset.notionProcessed) {
-      senderNameEl.dataset.notionProcessed = 'true';
+    const currentEmail = senderEmailEl?.getAttribute('email') || senderEmailEl?.textContent || '';
+
+    // If the email changed (user opened a different email), reset and reprocess
+    if (currentEmail !== lastSeenSenderEmail) {
+      lastSeenSenderEmail = currentEmail;
+
+      // Reset sender styling
       senderNameEl.classList.add('notion-sender-name');
 
-      // Extract company from email
-      const emailText = senderEmailEl?.getAttribute('email') || senderEmailEl?.textContent || '';
-      const company = extractCompanyFromEmail(emailText);
+      // Remove any existing company badge
+      document.querySelectorAll('.notion-company-badge').forEach(el => el.remove());
 
-      if (company && !document.querySelector('.notion-company-badge')) {
+      // Add company badge
+      const company = extractCompanyFromEmail(currentEmail);
+      if (company) {
         const badge = document.createElement('span');
         badge.className = 'notion-company-badge';
         badge.textContent = company;
-        // Insert after sender name
         senderNameEl.parentNode.insertBefore(badge, senderNameEl.nextSibling);
       }
-    }
 
-    // Highlight keywords in email body
-    const emailBody = document.querySelector('.a3s.aiL') || document.querySelector('.a3s');
-    if (emailBody) {
-      highlightKeywords(emailBody);
+      // Re-highlight keywords — find ALL expanded email bodies
+      document.querySelectorAll('.a3s').forEach(body => {
+        delete body.dataset.notionKeywordsHighlighted;
+        highlightKeywords(body);
+      });
+    } else {
+      // Same email — just catch any newly expanded reply bodies
+      document.querySelectorAll('.a3s:not([data-notion-keywords-highlighted])').forEach(body => {
+        highlightKeywords(body);
+      });
     }
   }
 
