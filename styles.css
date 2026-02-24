@@ -61,21 +61,20 @@ input, textarea, button, select {
 
 /* =====================
    EMAIL ROW TYPOGRAPHY
+   — Only change font/color, NEVER font-weight (Gmail handles read/unread boldness)
    ===================== */
 
 /* Sender name */
 .yX .yW span[email],
 .yX .zF {
   font-size: 14px !important;
-  font-weight: 600 !important;
   color: var(--notion-text) !important;
 }
 
-/* Subject line — Notion H2 style */
+/* Subject line — slightly larger, let Gmail control bold vs normal */
 .y6 .bog,
 span.bog {
   font-size: 15px !important;
-  font-weight: 600 !important;
   color: var(--notion-text) !important;
   letter-spacing: -0.01em !important;
 }
@@ -247,6 +246,19 @@ h2.hP {
 .a3s td, .ii td {
   padding: 10px 12px !important;
   border: 1px solid var(--notion-border) !important;
+}
+
+/* =====================
+   QUESTION SENTENCE HIGHLIGHT
+   ===================== */
+.notion-question {
+  display: inline !important;
+  background-color: #fefce8 !important;  /* soft yellow */
+  border-bottom: 2px solid #facc15 !important;
+  border-radius: 3px !important;
+  padding: 1px 2px !important;
+  font-weight: inherit !important;
+  color: inherit !important;
 }
 
 /* =====================

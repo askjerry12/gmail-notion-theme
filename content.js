@@ -8,30 +8,43 @@
   //  KEYWORD DEFINITIONS
   // =====================
   const TECH_KEYWORDS = [
-    // Builder.io specific
-    'Builder.io','builder.io','Visual CMS','Headless CMS','headless CMS',
-    'Fusion','Stencil','Server-side rendering','SSR','ISR',
-    // Platforms / CMS
+    // ---- Builder.io Product Terms (from docs/glossary) ----
+    'Builder.io','Visual Editor','Visual Copilot',
+    'Fusion','Publish',
+    'Space','Spaces','Organization','Environment','Environments',
+    'Content Entry','Data Model','Page Model','Section Model','Custom Component',
+    'Symbol','Slot','Targeting','Personalization',
+    'A/B test','A/B testing','Scheduled Publishing','Preview Mode',
+    'Public API Key','Private API Key','API Key',
+    'Figma Plugin','Design Token','Design Tokens',
+    'Headless CMS','headless CMS','Visual CMS','headless commerce',
+    'headless architecture','component-driven','server-side rendering',
+    'SSR','ISR','SSG','edge rendering',
+    // ---- Competing / Complementary CMS ----
     'Contentful','Sanity','Prismic','Strapi','WordPress','Drupal',
-    'Webflow','Wix','Squarespace','Shopify','Salesforce','HubSpot',
-    'Marketo','Pardot','Segment','Amplitude','Mixpanel','Heap',
-    'Figma','Sketch','Storybook',
-    // Frameworks / Tech
-    'React','Next.js','Nuxt','Vue','Angular','Svelte','Astro',
-    'TypeScript','JavaScript','GraphQL','REST','API','webhook',
-    'SDK','CDN','SSO','OAuth','SAML','JWT','2FA','MFA',
+    'Webflow','DatoCMS','Agility CMS','Storyblok',
+    // ---- Ecom / Marketing Platforms ----
+    'Shopify','Salesforce','HubSpot','Marketo','Pardot',
+    'Segment','Amplitude','Mixpanel','Heap','Klaviyo',
+    // ---- Design Tools ----
+    'Figma','Sketch','Storybook','Framer',
+    // ---- Frameworks / Tech ----
+    'React','Next.js','Nuxt','Vue','Angular','Svelte','Astro','Remix',
+    'TypeScript','JavaScript','GraphQL','REST','API','webhook','SDK',
+    'CDN','DNS','SSO','OAuth','SAML','JWT','2FA','MFA',
     'AWS','GCP','Azure','Vercel','Netlify','Cloudflare',
-    'GitHub','GitLab','Jira','Confluence','Linear','Notion',
+    // ---- Dev Tools ----
+    'GitHub','GitLab','Jira','Linear','Confluence','Notion',
     'Slack','Teams','Zoom','Intercom','Zendesk',
-    // Contract / Sales terms
-    'enterprise','Enterprise','POC','proof of concept','pilot','trial',
+    // ---- Contract / Sales ----
+    'enterprise','POC','proof of concept','pilot','trial',
     'contract','renewal','invoice','pricing','quote','proposal',
     'SLA','uptime','compliance','GDPR','SOC 2','HIPAA','security review',
-    'procurement','legal','MSA','NDA','onboarding',
-    // Action items
-    'ASAP','urgent','follow up','follow-up','deadline','by end of week','EOW','EOD',
+    'procurement','MSA','NDA','onboarding',
+    // ---- Urgency / Action ----
+    'ASAP','urgent','follow up','follow-up','deadline','EOW','EOD',
     'action required','action item','next step','please review','please confirm',
-    'schedule','meeting','call','demo','intro call','kickoff',
+    'demo','intro call','kickoff',
   ];
 
   const COMPANY_OVERRIDES = {
@@ -137,6 +150,75 @@
   }
 
   // =====================
+  //  QUESTION HIGHLIGHTER
+  // =====================
+
+  function highlightQuestions(container) {
+    if (!container) return;
+
+    // Walk block-level elements so we can handle sentence boundaries per paragraph
+    const blocks = container.querySelectorAll('p, div, li, td, span.gmail_default');
+    const processedBlocks = new Set();
+
+    blocks.forEach(block => {
+      if (processedBlocks.has(block)) return;
+      if (block.querySelector('p, div, li')) return; // skip non-leaf containers
+      if (block.dataset.notionQProcessed === 'true') return;
+      block.dataset.notionQProcessed = 'true';
+      processedBlocks.add(block);
+
+      // Only process if block contains a question mark
+      if (!block.textContent.includes('?')) return;
+
+      // Walk text nodes inside this block
+      const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+          const tag = node.parentElement?.tagName?.toLowerCase();
+          if (['script','style','code','pre'].includes(tag)) return NodeFilter.FILTER_REJECT;
+          if (node.parentElement?.classList?.contains('notion-question')) return NodeFilter.FILTER_REJECT;
+          if (node.parentElement?.classList?.contains('notion-keyword')) return NodeFilter.FILTER_ACCEPT; // still process keyword spans
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+
+      const textNodes = [];
+      let n;
+      while ((n = walker.nextNode())) textNodes.push(n);
+
+      textNodes.forEach(textNode => {
+        const text = textNode.textContent;
+        if (!text.includes('?')) return;
+
+        // Split on sentence boundaries (., !, ?), keeping the delimiter
+        const sentencePattern = /([^.!?]*[?][^.!?]*)/g;
+        let match;
+        const frag = document.createDocumentFragment();
+        let last = 0;
+
+        while ((match = sentencePattern.exec(text)) !== null) {
+          if (match.index > last) {
+            frag.appendChild(document.createTextNode(text.slice(last, match.index)));
+          }
+          const span = document.createElement('span');
+          span.className = 'notion-question';
+          span.textContent = match[0];
+          frag.appendChild(span);
+          last = match.index + match[0].length;
+        }
+
+        if (last < text.length) {
+          frag.appendChild(document.createTextNode(text.slice(last)));
+        }
+
+        // Only replace if we found questions
+        if (frag.childNodes.length > 1) {
+          textNode.parentNode.replaceChild(frag, textNode);
+        }
+      });
+    });
+  }
+
+  // =====================
   //  EMAIL LIST ROWS
   // =====================
 
@@ -193,15 +275,20 @@
         senderNameEl.parentNode.insertBefore(badge, senderNameEl.nextSibling);
       }
 
-      // Re-highlight keywords — find ALL expanded email bodies
+      // Re-highlight keywords + questions — find ALL expanded email bodies
       document.querySelectorAll('.a3s').forEach(body => {
         delete body.dataset.notionKeywordsHighlighted;
+        body.querySelectorAll('[data-notion-q-processed]').forEach(el => {
+          delete el.dataset.notionQProcessed;
+        });
         highlightKeywords(body);
+        highlightQuestions(body);
       });
     } else {
       // Same email — just catch any newly expanded reply bodies
       document.querySelectorAll('.a3s:not([data-notion-keywords-highlighted])').forEach(body => {
         highlightKeywords(body);
+        highlightQuestions(body);
       });
     }
   }
