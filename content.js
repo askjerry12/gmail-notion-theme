@@ -1,5 +1,5 @@
-// Gmail Notion Theme - Content Script v2.0
-// ADHD-optimized: sender as H3, company in blue, tech keywords highlighted, smart bullets
+// Gmail Notion Theme - Content Script v2.2
+// ADHD-optimized: sender as H3, company badge, tech keywords, question highlighting
 
 (function () {
   'use strict';
@@ -8,7 +8,7 @@
   //  KEYWORD DEFINITIONS
   // =====================
   const TECH_KEYWORDS = [
-    // ---- Builder.io Product Terms (from docs/glossary) ----
+    // ---- Builder.io Product Terms ----
     'Builder.io','Visual Editor','Visual Copilot',
     'Fusion','Publish',
     'Space','Spaces','Organization','Environment','Environments',
@@ -34,7 +34,7 @@
     'CDN','DNS','SSO','OAuth','SAML','JWT','2FA','MFA',
     'AWS','GCP','Azure','Vercel','Netlify','Cloudflare',
     // ---- Dev Tools ----
-    'GitHub','GitLab','Jira','Linear','Confluence','Notion',
+    'GitHub','GitLab','Jira','Linear','Confluence',
     'Slack','Teams','Zoom','Intercom','Zendesk',
     // ---- Contract / Sales ----
     'enterprise','POC','proof of concept','pilot','trial',
@@ -47,174 +47,113 @@
     'demo','intro call','kickoff',
   ];
 
-  const COMPANY_OVERRIDES = {
-    // Common domains → display names
-    'gmail.com': null, // skip personal
-    'yahoo.com': null,
-    'hotmail.com': null,
-    'outlook.com': null,
-    'icloud.com': null,
-    'me.com': null,
-    'builderio': 'Builder.io',
-    'builder': 'Builder.io',
-    'google': 'Google',
-    'microsoft': 'Microsoft',
-    'apple': 'Apple',
-    'amazon': 'Amazon',
-    'salesforce': 'Salesforce',
-    'hubspot': 'HubSpot',
-    'shopify': 'Shopify',
+  const PERSONAL_DOMAINS = new Set([
+    'gmail','yahoo','hotmail','outlook','icloud','me','live','aol','proton','protonmail'
+  ]);
+  const DOMAIN_OVERRIDES = {
+    'builderio': 'Builder.io', 'builder': 'Builder.io',
+    'google': 'Google', 'microsoft': 'Microsoft', 'apple': 'Apple',
+    'amazon': 'Amazon', 'salesforce': 'Salesforce',
+    'hubspot': 'HubSpot', 'shopify': 'Shopify',
   };
 
   // =====================
   //  HELPERS
   // =====================
 
-  function extractCompanyFromEmail(emailStr) {
+  function extractCompany(emailStr) {
     if (!emailStr) return null;
-    const match = emailStr.match(/@([^>]+)/);
-    if (!match) return null;
-    const domain = match[1].toLowerCase().trim();
-    const parts = domain.split('.');
-    const baseName = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+    const m = emailStr.match(/@([\w.-]+)/);
+    if (!m) return null;
+    const parts = m[1].toLowerCase().split('.');
+    const base = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+    if (PERSONAL_DOMAINS.has(base)) return null;
+    if (DOMAIN_OVERRIDES[base]) return DOMAIN_OVERRIDES[base];
+    return base.split(/[-_]/).map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+  }
 
-    // Skip personal domains
-    const personalDomains = ['gmail','yahoo','hotmail','outlook','icloud','me','live','aol','proton','protonmail'];
-    if (personalDomains.includes(baseName)) return null;
+  // =====================
+  //  QUESTION HIGHLIGHT
+  //  — adds class to block elements containing '?'
+  //  — much safer than text-node manipulation
+  // =====================
+  function highlightQuestions(container) {
+    if (!container) return;
 
-    // Check overrides
-    if (COMPANY_OVERRIDES[baseName] !== undefined) return COMPANY_OVERRIDES[baseName];
+    // Candidate block elements
+    container.querySelectorAll('p, li, td, div, span').forEach(el => {
+      if (el.dataset.notionQ === '1') return;
 
-    // Prettify: capitalize each word, handle hyphens
-    return baseName
-      .split(/[-_]/)
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ');
+      // Skip if this element has block children (only process leaf-ish nodes)
+      const hasBlockChildren = Array.from(el.children).some(c =>
+        ['P','DIV','LI','UL','OL','TABLE','BLOCKQUOTE'].includes(c.tagName)
+      );
+      if (hasBlockChildren) return;
+
+      if (el.textContent.includes('?')) {
+        el.dataset.notionQ = '1';
+        el.classList.add('notion-question');
+      }
+    });
+  }
+
+  // =====================
+  //  KEYWORD HIGHLIGHT
+  //  — walks text nodes, wraps keywords in spans
+  // =====================
+
+  let keywordRegex = null;
+  function getKeywordRegex() {
+    if (keywordRegex) return keywordRegex;
+    const sorted = [...TECH_KEYWORDS].sort((a, b) => b.length - a.length);
+    const escaped = sorted.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    keywordRegex = new RegExp(`\\b(${escaped.join('|')})\\b`, 'g');
+    return keywordRegex;
   }
 
   function highlightKeywords(container) {
-    if (!container || container.dataset.notionKeywordsHighlighted === 'true') return;
-    container.dataset.notionKeywordsHighlighted = 'true';
-    container.setAttribute('data-notion-keywords-highlighted', 'true');
+    if (!container || container.dataset.notionKw === '1') return;
+    container.dataset.notionKw = '1';
 
-    // Walk text nodes only — don't touch scripts/styles/links
+    const pattern = getKeywordRegex();
+
     const walker = document.createTreeWalker(
       container,
       NodeFilter.SHOW_TEXT,
       {
         acceptNode(node) {
-          const parent = node.parentElement;
-          if (!parent) return NodeFilter.FILTER_REJECT;
-          const tag = parent.tagName.toLowerCase();
-          if (['script','style','a','code','pre','span'].includes(tag)) return NodeFilter.FILTER_REJECT;
-          if (parent.classList.contains('notion-keyword')) return NodeFilter.FILTER_REJECT;
+          const tag = node.parentElement?.tagName?.toLowerCase();
+          if (!tag) return NodeFilter.FILTER_REJECT;
+          if (['script','style','a','code','pre'].includes(tag)) return NodeFilter.FILTER_REJECT;
+          if (node.parentElement?.classList?.contains('notion-keyword')) return NodeFilter.FILTER_REJECT;
+          if (node.parentElement?.classList?.contains('notion-question')) return NodeFilter.FILTER_ACCEPT;
           return NodeFilter.FILTER_ACCEPT;
         }
       }
     );
 
-    const nodesToReplace = [];
-    let node;
-    while ((node = walker.nextNode())) {
-      nodesToReplace.push(node);
-    }
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
 
-    // Build regex from keywords (longest first to avoid partial matches)
-    const sorted = [...TECH_KEYWORDS].sort((a, b) => b.length - a.length);
-    const escaped = sorted.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    const pattern = new RegExp(`\\b(${escaped.join('|')})\\b`, 'g');
-
-    nodesToReplace.forEach(textNode => {
+    nodes.forEach(textNode => {
       const text = textNode.textContent;
+      pattern.lastIndex = 0;
       if (!pattern.test(text)) return;
       pattern.lastIndex = 0;
 
       const frag = document.createDocumentFragment();
-      let last = 0;
-      let m;
+      let last = 0, m;
       while ((m = pattern.exec(text)) !== null) {
-        if (m.index > last) {
-          frag.appendChild(document.createTextNode(text.slice(last, m.index)));
-        }
+        if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
         const span = document.createElement('span');
         span.className = 'notion-keyword';
         span.textContent = m[1];
         frag.appendChild(span);
         last = m.index + m[1].length;
       }
-      if (last < text.length) {
-        frag.appendChild(document.createTextNode(text.slice(last)));
-      }
+      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
       textNode.parentNode.replaceChild(frag, textNode);
-    });
-  }
-
-  // =====================
-  //  QUESTION HIGHLIGHTER
-  // =====================
-
-  function highlightQuestions(container) {
-    if (!container) return;
-
-    // Walk block-level elements so we can handle sentence boundaries per paragraph
-    const blocks = container.querySelectorAll('p, div, li, td, span.gmail_default');
-    const processedBlocks = new Set();
-
-    blocks.forEach(block => {
-      if (processedBlocks.has(block)) return;
-      if (block.querySelector('p, div, li')) return; // skip non-leaf containers
-      if (block.dataset.notionQProcessed === 'true') return;
-      block.dataset.notionQProcessed = 'true';
-      processedBlocks.add(block);
-
-      // Only process if block contains a question mark
-      if (!block.textContent.includes('?')) return;
-
-      // Walk text nodes inside this block
-      const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT, {
-        acceptNode(node) {
-          const tag = node.parentElement?.tagName?.toLowerCase();
-          if (['script','style','code','pre'].includes(tag)) return NodeFilter.FILTER_REJECT;
-          if (node.parentElement?.classList?.contains('notion-question')) return NodeFilter.FILTER_REJECT;
-          if (node.parentElement?.classList?.contains('notion-keyword')) return NodeFilter.FILTER_ACCEPT; // still process keyword spans
-          return NodeFilter.FILTER_ACCEPT;
-        }
-      });
-
-      const textNodes = [];
-      let n;
-      while ((n = walker.nextNode())) textNodes.push(n);
-
-      textNodes.forEach(textNode => {
-        const text = textNode.textContent;
-        if (!text.includes('?')) return;
-
-        // Split on sentence boundaries (., !, ?), keeping the delimiter
-        const sentencePattern = /([^.!?]*[?][^.!?]*)/g;
-        let match;
-        const frag = document.createDocumentFragment();
-        let last = 0;
-
-        while ((match = sentencePattern.exec(text)) !== null) {
-          if (match.index > last) {
-            frag.appendChild(document.createTextNode(text.slice(last, match.index)));
-          }
-          const span = document.createElement('span');
-          span.className = 'notion-question';
-          span.textContent = match[0];
-          frag.appendChild(span);
-          last = match.index + match[0].length;
-        }
-
-        if (last < text.length) {
-          frag.appendChild(document.createTextNode(text.slice(last)));
-        }
-
-        // Only replace if we found questions
-        if (frag.childNodes.length > 1) {
-          textNode.parentNode.replaceChild(frag, textNode);
-        }
-      });
     });
   }
 
@@ -223,102 +162,93 @@
   // =====================
 
   function processEmailRows() {
-    document.querySelectorAll('.zA:not([data-notion-processed])').forEach(row => {
-      row.dataset.notionProcessed = 'true';
+    document.querySelectorAll('.zA:not([data-notion-row])').forEach(row => {
+      row.dataset.notionRow = '1';
 
-      // Keyword-based color callouts
       const subject = row.querySelector('.bog')?.textContent?.toLowerCase() || '';
       const preview = row.querySelector('.y2')?.textContent?.toLowerCase() || '';
       const combined = subject + ' ' + preview;
 
-      const warningWords = ['warning','alert','urgent','important','critical','attention','action required','asap'];
-      const infoWords = ['update','announcement','news','notice','newsletter'];
-      const successWords = ['success','confirmed','approved','completed','done','finished','delivered','shipped'];
-      const errorWords = ['error','failed','rejected','denied','blocked','invalid','expired','overdue'];
-
-      if (warningWords.some(w => combined.includes(w))) row.dataset.notionType = 'warning';
-      else if (errorWords.some(w => combined.includes(w))) row.dataset.notionType = 'error';
-      else if (successWords.some(w => combined.includes(w))) row.dataset.notionType = 'success';
-      else if (infoWords.some(w => combined.includes(w))) row.dataset.notionType = 'info';
+      if (['warning','alert','urgent','important','critical','action required','asap'].some(w => combined.includes(w)))
+        row.dataset.notionType = 'warning';
+      else if (['error','failed','rejected','denied','expired','overdue'].some(w => combined.includes(w)))
+        row.dataset.notionType = 'error';
+      else if (['success','confirmed','approved','completed','delivered','shipped'].some(w => combined.includes(w)))
+        row.dataset.notionType = 'success';
+      else if (['update','announcement','news','notice','newsletter'].some(w => combined.includes(w)))
+        row.dataset.notionType = 'info';
     });
   }
 
   // =====================
   //  READING PANE
+  //  — processes ALL sender elements (threads have multiple)
   // =====================
 
-  let lastSeenSenderEmail = null;
+  const processedSenders = new WeakSet();
 
-  function processReadingPane() {
-    const senderNameEl = document.querySelector('.gD');
-    const senderEmailEl = document.querySelector('.go');
-    if (!senderNameEl) return;
+  function processSenders() {
+    // .gD = sender name in both collapsed and expanded Gmail messages
+    // Also target h3.iw (expanded header name in some Gmail versions)
+    document.querySelectorAll('.gD, h3.iw').forEach(el => {
+      if (processedSenders.has(el)) return;
+      processedSenders.add(el);
 
-    const currentEmail = senderEmailEl?.getAttribute('email') || senderEmailEl?.textContent || '';
+      // Apply H3 styling via class
+      el.classList.add('notion-sender-name');
 
-    // If the email changed (user opened a different email), reset and reprocess
-    if (currentEmail !== lastSeenSenderEmail) {
-      lastSeenSenderEmail = currentEmail;
+      // Find associated email address
+      // Look for .go sibling or parent-level .go
+      const parent = el.closest('.go, .gE, .nH, .adn') || el.parentElement;
+      const emailEl = parent?.querySelector?.('.go') || el.nextElementSibling;
+      const emailText = emailEl?.getAttribute('email') || emailEl?.textContent || '';
 
-      // Reset sender styling
-      senderNameEl.classList.add('notion-sender-name');
-
-      // Remove any existing company badge
-      document.querySelectorAll('.notion-company-badge').forEach(el => el.remove());
-
-      // Add company badge
-      const company = extractCompanyFromEmail(currentEmail);
-      if (company) {
+      const company = extractCompany(emailText);
+      // Only add badge if not already there for this sender element
+      if (company && !el.parentElement.querySelector('.notion-company-badge')) {
         const badge = document.createElement('span');
         badge.className = 'notion-company-badge';
         badge.textContent = company;
-        senderNameEl.parentNode.insertBefore(badge, senderNameEl.nextSibling);
+        el.parentNode.insertBefore(badge, el.nextSibling);
       }
+    });
+  }
 
-      // Re-highlight keywords + questions — find ALL expanded email bodies
-      document.querySelectorAll('.a3s').forEach(body => {
-        delete body.dataset.notionKeywordsHighlighted;
-        body.querySelectorAll('[data-notion-q-processed]').forEach(el => {
-          delete el.dataset.notionQProcessed;
-        });
-        highlightKeywords(body);
-        highlightQuestions(body);
-      });
-    } else {
-      // Same email — just catch any newly expanded reply bodies
-      document.querySelectorAll('.a3s:not([data-notion-keywords-highlighted])').forEach(body => {
-        highlightKeywords(body);
-        highlightQuestions(body);
-      });
-    }
+  function processEmailBodies() {
+    // Find all expanded email body containers
+    document.querySelectorAll('.a3s:not([data-notion-kw])').forEach(body => {
+      // Run question highlight FIRST (before keywords split text nodes)
+      highlightQuestions(body);
+      // Then keyword highlight
+      highlightKeywords(body);
+      body.dataset.notionKw = '1';
+    });
   }
 
   // =====================
   //  OBSERVER
   // =====================
 
-  let debounceTimer = null;
-  function onDOMChange() {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      processEmailRows();
-      processReadingPane();
-    }, 250);
+  let debounce = null;
+
+  function run() {
+    processEmailRows();
+    processSenders();
+    processEmailBodies();
   }
 
   function init() {
-    processEmailRows();
-    processReadingPane();
-
-    const observer = new MutationObserver(onDOMChange);
-    observer.observe(document.body, { childList: true, subtree: true });
+    run();
+    new MutationObserver(() => {
+      clearTimeout(debounce);
+      debounce = setTimeout(run, 300);
+    }).observe(document.body, { childList: true, subtree: true });
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', () => setTimeout(init, 800));
   } else {
-    // Gmail may not be ready immediately
-    setTimeout(init, 1000);
+    setTimeout(init, 800);
   }
 
 })();
